@@ -55,13 +55,12 @@ def readdf(csvdirname):
         if "VX" not in f:
             continue
         filename = "%s/%s" % (csvdirname, f)
-        dflist.append(pd.read_csv(filename))
+        thisdf = pd.read_csv(filename)
+        thisdf['futmat'] = f[7:17]
+        dflist.append(thisdf)
     df = pd.concat(dflist)
     df['date'] = pd.to_datetime(df['Trade Date'])
-    futmat = []
-    for s in df['Futures']:
-        futmat.append(s[3:11])
-    df['futmat'] = pd.to_datetime(futmat)
+    df['futmat'] = pd.to_datetime(df['futmat'])
     return df
 
 # get series info
@@ -101,6 +100,7 @@ def plot_raw(df, datesinfo, nb=24):
 def cont_futures(df, datesinfo):
     datelist = np.sort(df['date'].unique())
     spread = np.full((len(datelist),13), np.nan)
+    datemat = np.full((len(datelist),13), np.nan)
     futreflist = []
     for idate in range(0, len(datelist)):
         d = datelist[idate]
@@ -117,21 +117,31 @@ def cont_futures(df, datesinfo):
         futreflist.append(futref)
         futmatref = daydata[daydata['Futures']==futref]['futmat'].iloc[0]
         spread[idate,1] = (float)(daydata[daydata['Futures']==futref]['Close'].iloc[0])
+        datemat[idate,0] = 0
+        datemat[idate,1] = (futmatref-d).total_seconds()/3600./24./365.
+        if futmatref<d:
+            raise Exception("error %s %s" % (str(futmatref),str(d)))
         for i in range(1,len(futuresinfo)):
             fut = futuresinfo.iloc[i]['Futures']
             futmat = daydata[daydata['Futures']==fut]['futmat'].iloc[0]
             futquote = (float)(daydata[daydata['Futures']==fut]['Close'].iloc[0])
             delta = futmat - futmatref
             j = (int)(np.round(delta.total_seconds()/3600/24/30,0))
-            spread[idate,j+1] = futquote #- spread[idate,0]
+            spread[idate,j+1] = futquote 
+            datemat[idate,j+1] = (futmat-d).total_seconds()/3600./24./365.
         if idate % 100==0:
             print("processed %d/%d" % (idate,len(datelist)))
     spreaddf = pd.DataFrame(spread)
     spreaddf['date'] = datelist
     spreaddf['futref'] = futreflist
-    #spreaddf.to_csv("spreads.csv")
+    spreaddf.to_csv(csvdirname + "/futbymonth.csv")
+    datematdf = pd.DataFrame(datemat)
+    datematdf['date'] = datelist
+    datematdf['futref'] = futreflist
+    datematdf.to_csv(csvdirname + "/datebymonth.csv")
     #spreaddf.describe()
-    return spreaddf
+    return spreaddf, datematdf
+    
 
 def get_vix_hist():
     url = "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
@@ -175,14 +185,30 @@ def plot_cont_spread(spreaddf):
     plt.savefig(picsdirname+'/vix_spread.png')
     plt.close(fig)
 
+def graph_vix_curve(datematdf, spreaddf):
+    fig = plt.figure(1)
+    i = -1
+    plt.plot(datematdf.iloc[i][np.arange(0,10)], spreaddf.iloc[i][np.arange(0,10)], label=str(datematdf.iloc[i]['date'])[0:10], marker="o")
+    i = -2
+    plt.plot(datematdf.iloc[i][np.arange(0,10)], spreaddf.iloc[i][np.arange(0,10)], label=str(datematdf.iloc[i]['date'])[0:10], marker="o", color="gray")
+    i = -3
+    plt.plot(datematdf.iloc[i][np.arange(0,10)], spreaddf.iloc[i][np.arange(0,10)], label=str(datematdf.iloc[i]['date'])[0:10], marker="o", color="lightgray")
+    plt.legend()
+    plt.title("Vix Future Curve")
+    plt.xlabel("maturity in years")
+    plt.ylabel("1month VIX index Quote")
+    plt.savefig(picsdirname+'/vix_curve.png')
+    plt.close(fig)
+
 get_webdata()
 df = readdf(csvdirname)
 datesinfo = series_info(df)
 plot_raw(df, datesinfo, 24)
 plot_raw(df, datesinfo, 0)
-spreaddf = cont_futures(df, datesinfo)
+spreaddf, datematdf = cont_futures(df, datesinfo)
 vixdf = get_vix_hist()
 spreaddf = join_df(vixdf, spreaddf)
 plot_cont(spreaddf)
 plot_cont_spread(spreaddf)
+graph_vix_curve(datematdf, spreaddf)
 os.system('rsync -avzhe ssh %s %s' % (picsdirname, config.remotedir))
