@@ -1,7 +1,7 @@
 import requests, re, os
 import datetime as dt, time
 from lxml import html
-import csv
+import csv, json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -33,18 +33,27 @@ def get_webdata():
     x = requests.get(baseurl)
     print("%s %d" % (baseurl,x.status_code))
     parsed_body=html.fromstring(x.text)
-    href = parsed_body.xpath('//li[@class="mbn"]/a/@href')
-    text = parsed_body.xpath('//li[@class="mbn"]/a/text()')
+    scripts = parsed_body.xpath('//script/text()')
+    urls = json.loads(scripts[2].split("\n")[2].split("=")[1])
+    href = []
+    text = []
+    for k in urls.keys():
+        for u in urls[k]:
+            text.append("%s (%s)" % (u['product_display'].replace("/"," "), dt.datetime.strftime(dt.datetime.strptime(u['expire_date'], "%Y-%m-%d"), '%b %Y')))
+            href.append("https://cdn.cboe.com/%s" % u['path'])
+    #href = parsed_body.xpath('//li[@class="mbn"]/a/@href')
+    #text = parsed_body.xpath('//li[@class="mbn"]/a/text()')
     now = dt.datetime.utcnow()
     for i in range(0, len(href)):
-        t = text[2*i+1]
+        t = text[i]
         h = href[i]
         if re.search("VXT ",t):
-            ticker = "VX-Mat-%s" % h[16:-1]
+            ymdstr = h[77:-4]
+            ticker = "VX-Mat-%s" % ymdstr
             filename =  "%s/%s.csv" % (csvdirname,ticker)
             fileexists = os.path.isfile(filename)
-            if fileexists==False or pd.to_datetime(h[16:-1]) > now:
-                url = baseurl+h
+            if fileexists==False or pd.to_datetime(ymdstr) > now:
+                url = h
                 load_url_to_file(url, filename)
 
 ## load csv data into dataframe
