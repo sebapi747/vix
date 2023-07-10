@@ -34,7 +34,10 @@ def get_webdata():
     print("%s %d" % (baseurl,x.status_code))
     parsed_body=html.fromstring(x.text)
     scripts = parsed_body.xpath('//script/text()')
-    urls = json.loads(scripts[2].split("\n")[2].split("=")[1])
+    csvstr = scripts[2].split("\n")[2].split("=")[1]
+    if csvstr[-1]==";":
+        csvstr = csvstr[:-1]
+    urls = json.loads(csvstr)
     href = []
     text = []
     for k in urls.keys():
