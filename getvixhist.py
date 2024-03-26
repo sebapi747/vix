@@ -9,10 +9,17 @@ import config
 
 csvdirname=config.dirname + '/data'
 picsdirname=config.dirname + '/pics'
+def sendTelegram(text):
+    prefix = os.uname()[1] + __file__ + ":"
+    params = {'chat_id': config.telegramchatid, 'text': prefix+text, 'parse_mode': 'HTML'}
+    resp = requests.post('https://api.telegram.org/bot{}/sendMessage'.format(config.telegramtoken), params)
+    resp.raise_for_status()
 
 def write_url_to_file(url, filename):
     x = requests.get(url)
     print("%s %d" % (url,x.status_code))
+    if x.status_code!=200:
+        sendTelegram("error %s %d" % (url,x.status_code))
     f = open(filename, 'w')
     f.write(x.text)
     f.close()
@@ -32,6 +39,8 @@ def get_webdata():
     baseurl = 'https://www.cboe.com/us/futures/market_statistics/historical_data/'
     x = requests.get(baseurl)
     print("%s %d" % (baseurl,x.status_code))
+    if x.status_code!=200:
+        sendTelegram("error %s %d" % (baseurl,x.status_code))
     parsed_body=html.fromstring(x.text)
     scripts = parsed_body.xpath('//script/text()')
     csvstr = scripts[2].split("\n")[2].split("=")[1]
