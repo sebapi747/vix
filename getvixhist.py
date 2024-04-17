@@ -9,6 +9,10 @@ import config
 
 csvdirname=config.dirname + '/data'
 picsdirname=config.dirname + '/pics'
+
+def get_metadata():
+    return {'Creator':os.uname()[1] +":"+__file__+":"+str(dt.datetime.utcnow())}
+
 def sendTelegram(text):
     prefix = os.uname()[1] + __file__ + ":"
     params = {'chat_id': config.telegramchatid, 'text': prefix+text, 'parse_mode': 'HTML'}
@@ -115,7 +119,7 @@ def plot_raw(df, datesinfo, nb=24):
     plt.xticks(rotation='vertical')
     plt.ylabel('vix future quote')
     plt.title("Vix Quotes All Tenors\nlast price: %s" % str(np.max(df['date']))[:10])
-    plt.savefig('%s/vix%d.png' % (picsdirname, nb))
+    plt.savefig('%s/vix%d.png' % (picsdirname, nb),metadata=get_metadata())
     plt.close(fig)
 
 def cont_futures(df, datesinfo):
@@ -187,7 +191,7 @@ def plot_cont(spreaddf):
         plt.plot(spreaddf['date'], spreaddf[i], label=stats)
     plt.legend()
     plt.title("VIX Cont Future\nlast price: %s" % str(np.max(spreaddf['date']))[:10])
-    plt.savefig(picsdirname+'/vix_cont.png')
+    plt.savefig(picsdirname+'/vix_cont.png',metadata=get_metadata())
     plt.close(fig)
 
 def plot_cont_spread(spreaddf):
@@ -203,7 +207,7 @@ def plot_cont_spread(spreaddf):
     plt.title("Vix Future Spread\nlast price: %s" % str(np.max(spreaddf['date']))[:10])
     plt.axhline(y=0, color='black')
     #plt.xlabel(stats)
-    plt.savefig(picsdirname+'/vix_spread.png')
+    plt.savefig(picsdirname+'/vix_spread.png',metadata=get_metadata())
     plt.close(fig)
 
 def graph_vix_curve(datematdf, spreaddf):
@@ -218,7 +222,7 @@ def graph_vix_curve(datematdf, spreaddf):
     plt.title("Vix Future Curve")
     plt.xlabel("maturity in years")
     plt.ylabel("1month VIX index Quote")
-    plt.savefig(picsdirname+'/vix_curve.png')
+    plt.savefig(picsdirname+'/vix_curve.png',metadata=get_metadata())
     plt.close(fig)
 
 get_webdata()
