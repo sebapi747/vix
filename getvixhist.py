@@ -24,6 +24,7 @@ def write_url_to_file(url, filename):
     print("%s %d" % (url,x.status_code))
     if x.status_code!=200:
         sendTelegram("error %s %d" % (url,x.status_code))
+        raise Exception(url)
     f = open(filename, 'w')
     f.write(x.text)
     f.close()
@@ -45,6 +46,7 @@ def get_webdata():
     print("%s %d" % (baseurl,x.status_code))
     if x.status_code!=200:
         sendTelegram("error %s %d" % (baseurl,x.status_code))
+        raise Exception(baseurl)
     parsed_body=html.fromstring(x.text)
     scripts = parsed_body.xpath('//script/text()')
     csvstr = scripts[2].split("\n")[2].split("=")[1]
