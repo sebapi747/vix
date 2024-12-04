@@ -15,7 +15,7 @@ def get_metadata():
 
 def sendTelegram(text):
     prefix = os.uname()[1] + __file__ + ":"
-    params = {'chat_id': config.telegramchatid, 'text': prefix+text, 'parse_mode': 'HTML'}
+    params = {'chat_id': config.telegramchatid, 'text': prefix+text, 'parse_mode': 'markdown'}
     resp = requests.post('https://api.telegram.org/bot{}/sendMessage'.format(config.telegramtoken), params)
     resp.raise_for_status()
 
@@ -239,3 +239,4 @@ plot_cont(spreaddf)
 plot_cont_spread(spreaddf)
 graph_vix_curve(datematdf, spreaddf)
 os.system('rsync -avzhe ssh %s %s' % (picsdirname, config.remotedir))
+sendTelegram("INFO:regenerated [vix data](https://www.markowitzoptimizer.pro/blog/32)")
