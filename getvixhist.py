@@ -44,24 +44,20 @@ def load_url_to_file(url, filename):
 
 def get_webdata():
     baseurl = 'https://www.cboe.com/us/futures/market_statistics/historical_data/'
-    page = ChromiumPage() 
-    page.get(baseurl)
-    parsed_body=html.fromstring(page.html)
-    scripts = parsed_body.xpath('//script/text()')
-    #x = requests.get(baseurl)
-    #print("%s %d" % (baseurl,x.status_code))
-    #if x.status_code!=200:
-    #    sendTelegram("error %s %d" % (baseurl,x.status_code))
-    #    raise Exception(baseurl)
-    parsed_body=html.fromstring(x.text)
-    scripts = parsed_body.xpath('//script/text()')
-    #csvstr = scripts[2].split("\n")[2].split("=")[1]
-    csvstr = scripts[3].split("\n")[2].split("=")[1]
-    if csvstr[-1]==";":
-        csvstr = csvstr[:-1]
-    urls = json.loads(csvstr)
-    page.quit = lambda: [proc.kill() for proc in psutil.process_iter() if proc.name().__contains__('chrome')]
-    page.quit()
+    try:
+        page = ChromiumPage() 
+        page.get(baseurl)
+        parsed_body=html.fromstring(page.html)
+        scripts = parsed_body.xpath('//script/text()')
+        csvstr = scripts[3].split("\n")[2].split("=")[1]
+        if csvstr[-1]==";":
+            csvstr = csvstr[:-1]
+        urls = json.loads(csvstr)
+        page.quit = lambda: [proc.kill() for proc in psutil.process_iter() if proc.name().__contains__('chromium')]
+        page.quit()
+    except Exception as e:
+        sendTelegram("error %s %s" % (baseurl,str(e)))
+        raise Exception(baseurl)
     href = []
     text = []
     for k in urls.keys():
