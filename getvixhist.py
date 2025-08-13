@@ -54,10 +54,8 @@ def get_webdata():
         scripts = parsed_body.xpath('//script/text()')
         for s in scripts:
             if "CTX.defaultProduct =" in s:
-                #print(s)
                 break
         csvstr = s.split("\n")[2].split("=")[1] # 20250813 was scripts[3] instead of s
-        #print(csvstr)
         if csvstr[-1]==";":
             csvstr = csvstr[:-1]
         urls = json.loads(csvstr)
