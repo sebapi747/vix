@@ -16,6 +16,9 @@ def get_metadata():
     return {'Creator':os.uname()[1] +":"+__file__+":"+str(dt.datetime.utcnow())}
 
 def sendTelegram(text):
+    if not hasattr(config, 'telegramchatid') or config.telegramchatid is None:
+        print(text)
+        return
     prefix = os.uname()[1] + __file__ + ":"
     params = {'chat_id': config.telegramchatid, 'text': prefix+text, 'parse_mode': 'markdown'}
     resp = requests.post('https://api.telegram.org/bot{}/sendMessage'.format(config.telegramtoken), params)
@@ -49,7 +52,8 @@ def get_webdata():
         page.get(baseurl)
         parsed_body=html.fromstring(page.html)
         scripts = parsed_body.xpath('//script/text()')
-        csvstr = scripts[3].split("\n")[2].split("=")[1]
+        csvstr = scripts[4].split("\n")[2].split("=")[1] # 20250813 was scripts[3]
+        #print(csvstr)
         if csvstr[-1]==";":
             csvstr = csvstr[:-1]
         urls = json.loads(csvstr)
