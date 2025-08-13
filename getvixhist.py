@@ -52,7 +52,11 @@ def get_webdata():
         page.get(baseurl)
         parsed_body=html.fromstring(page.html)
         scripts = parsed_body.xpath('//script/text()')
-        csvstr = scripts[4].split("\n")[2].split("=")[1] # 20250813 was scripts[3]
+        for s in scripts:
+            if "CTX.defaultProduct =" in s:
+                #print(s)
+                break
+        csvstr = s.split("\n")[2].split("=")[1] # 20250813 was scripts[3] instead of s
         #print(csvstr)
         if csvstr[-1]==";":
             csvstr = csvstr[:-1]
