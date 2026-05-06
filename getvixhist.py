@@ -59,6 +59,7 @@ def get_webdata():
             search_input.input(f"{y}\n")
             links = page.eles('tag:a')
             hrefs = [link.link for link in links if link.link and link.link[-4:]=='.csv' and 'VX' in link.link]
+            print(y,hrefs)
             urls += hrefs
             time.sleep(0.1)        
         page.quit = lambda: [proc.kill() for proc in psutil.process_iter() if proc.name().__contains__('chromium')]
@@ -68,9 +69,9 @@ def get_webdata():
         raise Exception(baseurl)
     href = []
     text = []
-    for k in urls:
+    for url in urls:
         filename = csvdirname + "/" + os.path.basename(url).replace("VX_","VX-Mat-")
-        contractdate = dt.datetime.strptime(filepath[-14:-4], "%Y-%m-%d").date()
+        contractdate = dt.datetime.strptime(filename[-14:-4], "%Y-%m-%d").date()
         if os.path.isfile(filename)==False or contractdate>dt.datetime.utcnow():
             write_url_to_file(url, filename)
 
