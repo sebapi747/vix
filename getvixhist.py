@@ -50,15 +50,17 @@ def get_webdata():
     try:
         page = ChromiumPage() 
         page.get(baseurl)
-        parsed_body=html.fromstring(page.html)
-        scripts = parsed_body.xpath('//script/text()')
-        for s in scripts:
-            if "CTX.defaultProduct =" in s:
-                break
-        csvstr = s.split("\n")[2].split("=")[1] # 20250813 was scripts[3] instead of s
-        if csvstr[-1]==";":
-            csvstr = csvstr[:-1]
-        urls = json.loads(csvstr)
+        years = list(range(dt.datetime.utcnow().year + 1, 2012, -1))
+        combobox = page.ele('#year-combobox')
+        urls = []
+        for y in years:
+            combobox.click()           # open the combobox
+            search_input = page.ele('xpath://input[@data-slot="command-palette-input"]')
+            search_input.input(f"{y}\n")
+            links = page.eles('tag:a')
+            hrefs = [link.link for link in links if link.link and link.link[-4:]=='.csv' and 'VX' in link.link]
+            urls += hrefs
+            time.sleep(0.1)        
         page.quit = lambda: [proc.kill() for proc in psutil.process_iter() if proc.name().__contains__('chromium')]
         page.quit()
     except Exception as e:
@@ -66,24 +68,11 @@ def get_webdata():
         raise Exception(baseurl)
     href = []
     text = []
-    for k in urls.keys():
-        for u in urls[k]:
-            text.append("%s (%s)" % (u['product_display'].replace("/"," "), dt.datetime.strftime(dt.datetime.strptime(u['expire_date'], "%Y-%m-%d"), '%b %Y')))
-            href.append("https://cdn.cboe.com/%s" % u['path'])
-    #href = parsed_body.xpath('//li[@class="mbn"]/a/@href')
-    #text = parsed_body.xpath('//li[@class="mbn"]/a/text()')
-    now = dt.datetime.utcnow()
-    for i in range(0, len(href)):
-        t = text[i]
-        h = href[i]
-        if re.search("VXT ",t):
-            ymdstr = h[77:-4]
-            ticker = "VX-Mat-%s" % ymdstr
-            filename =  "%s/%s.csv" % (csvdirname,ticker)
-            fileexists = os.path.isfile(filename)
-            if fileexists==False or pd.to_datetime(ymdstr) > now:
-                url = h
-                load_url_to_file(url, filename)
+    for k in urls:
+        filename = csvdirname + "/" + os.path.basename(url).replace("VX_","VX-Mat-")
+        contractdate = dt.datetime.strptime(filepath[-14:-4], "%Y-%m-%d").date()
+        if os.path.isfile(filename)==False or contractdate>dt.datetime.utcnow():
+            write_url_to_file(url, filename)
 
 ## load csv data into dataframe
 def readdf(csvdirname):
