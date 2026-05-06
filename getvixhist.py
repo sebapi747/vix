@@ -72,7 +72,7 @@ def get_webdata():
     for url in urls:
         filename = csvdirname + "/" + os.path.basename(url).replace("VX_","VX-Mat-")
         contractdate = dt.datetime.strptime(filename[-14:-4], "%Y-%m-%d").date()
-        if os.path.isfile(filename)==False or contractdate>dt.datetime.utcnow():
+        if os.path.isfile(filename)==False or contractdate>dt.datetime.utcnow().date():
             write_url_to_file(url, filename)
 
 ## load csv data into dataframe
